@@ -160,5 +160,5 @@ func getConfigPath(fileName string) string {
 		logStdErr(fmt.Sprintf("failed to resolve config path: %v", err))
 	}
 
-	return filepath.Join(dir, "go-zone", fileName)
+	return filepath.Join(dir, "go-zones", fileName)
 }
