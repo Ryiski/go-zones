@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 )
@@ -97,10 +99,14 @@ func ParseFlags() (CLIOpts, error) {
 	// Actually parse the flags
 	flag.Parse()
 
+	if dir == "" {
+		dir = getConfigPath("generated")
+	}
+
 	switch mode {
 	case "server":
 		if configPath == "" {
-			return CLIOpts{}, Stoerr("[Server Mode]: No server configuration defined! (-config=./config.yml)")
+			configPath = getConfigPath("config.server.yml")
 		}
 		// Validate the path first
 		if err := ValidateConfigPath(configPath); err != nil {
@@ -109,16 +115,13 @@ func ParseFlags() (CLIOpts, error) {
 
 	case "file":
 		if source == "" {
-			return CLIOpts{}, Stoerr("[File Mode]: No source YAML defined! (-source=./zones.yml)")
+			source = getConfigPath("config.yaml")
 		}
 		// Validate the source file first
 		if err := ValidateConfigPath(source); err != nil {
 			return CLIOpts{}, err
 		}
 
-		if dir == "" {
-			return CLIOpts{}, Stoerr("[File Mode]: No target directory defined! (-dir=./generated)")
-		}
 		// Validate the dir directory first
 		if err := ValidateConfigDirectory(dir); err != nil {
 			return CLIOpts{}, err
@@ -126,16 +129,13 @@ func ParseFlags() (CLIOpts, error) {
 
 	default:
 		if source == "" {
-			return CLIOpts{}, Stoerr("[File Mode]: No source YAML defined! (-source=./zones.yml)")
+			source = getConfigPath("config.yaml")
 		}
 		// Validate the source file first
 		if err := ValidateConfigPath(source); err != nil {
 			return CLIOpts{}, err
 		}
 
-		if dir == "" {
-			return CLIOpts{}, Stoerr("[File Mode]: No target directory defined! (-dir=./generated)")
-		}
 		// Validate the dir directory first
 		if err := ValidateConfigDirectory(dir); err != nil {
 			return CLIOpts{}, err
@@ -151,4 +151,14 @@ func ParseFlags() (CLIOpts, error) {
 
 	// Return the configuration path
 	return SetCLIOpts, nil
+}
+
+func getConfigPath(fileName string) string {
+
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		logStdErr(fmt.Sprintf("failed to resolve config path: %v", err))
+	}
+
+	return filepath.Join(dir, "go-zone", fileName)
 }
