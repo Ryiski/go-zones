@@ -1,7 +1,9 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 )
 
 // FileModeApplication will run the File Mode application logic bootstrap
@@ -23,7 +25,9 @@ func (config CLIOpts) FileModeApplication() {
 			CreateDirectory(absoluteTargetDirectory)
 		}
 	}
-	CreateDirectory(absoluteTargetDirectory + "/config")
+
+	configPath := absoluteTargetDirectory + "/config"
+	CreateDirectory(configPath)
 	CreateDirectory(absoluteTargetDirectory + "/zones")
 
 	// Read in Zones file
@@ -42,6 +46,25 @@ func (config CLIOpts) FileModeApplication() {
 	check(err)
 
 	_, err = GenerateBindZoneFiles(&server.DNS, absoluteTargetDirectory)
+	check(err)
+
+	files, err := os.ReadDir(configPath)
+	check(err)
+
+	var includes strings.Builder
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		fullPath := filepath.Join(configPath, file.Name())
+		includes.WriteString("include \"" + fullPath + "\";\n")
+	}
+
+	includeFile := filepath.Join(absoluteTargetDirectory, "includes.conf")
+
+	err = os.WriteFile(includeFile, []byte(includes.String()), 0644)
 	check(err)
 
 	//_, err = LoopThroughZonesForBindConfig(server, absoluteTargetDirectory)
